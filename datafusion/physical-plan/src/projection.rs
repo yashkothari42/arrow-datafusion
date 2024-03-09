@@ -291,27 +291,33 @@ fn stats_projection(
     stats
 }
 
+pub fn batch_project(
+    batch: &RecordBatch,
+    expr: Vec<Arc<dyn PhysicalExpr>>,
+    schema: SchemaRef,
+) -> Result<RecordBatch> {
+    let arrays = expr
+        .iter()
+        .map(|expr1| {
+            expr1
+                .evaluate(batch)
+                .and_then(|v| v.into_array(batch.num_rows()))
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    if arrays.is_empty() {
+        let options = RecordBatchOptions::new().with_row_count(Some(batch.num_rows()));
+        RecordBatch::try_new_with_options(schema.clone(), arrays, &options)
+            .map_err(Into::into)
+    } else {
+        RecordBatch::try_new(schema.clone(), arrays).map_err(Into::into)
+    }
+}
 impl ProjectionStream {
     fn batch_project(&self, batch: &RecordBatch) -> Result<RecordBatch> {
         // records time on drop
         let _timer = self.baseline_metrics.elapsed_compute().timer();
-        let arrays = self
-            .expr
-            .iter()
-            .map(|expr| {
-                expr.evaluate(batch)
-                    .and_then(|v| v.into_array(batch.num_rows()))
-            })
-            .collect::<Result<Vec<_>>>()?;
-
-        if arrays.is_empty() {
-            let options =
-                RecordBatchOptions::new().with_row_count(Some(batch.num_rows()));
-            RecordBatch::try_new_with_options(self.schema.clone(), arrays, &options)
-                .map_err(Into::into)
-        } else {
-            RecordBatch::try_new(self.schema.clone(), arrays).map_err(Into::into)
-        }
+        batch_project(&batch, self.expr.clone(), self.schema.clone())
     }
 }
 
