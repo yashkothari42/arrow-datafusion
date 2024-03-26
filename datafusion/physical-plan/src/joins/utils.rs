@@ -120,9 +120,9 @@ use parking_lot::Mutex;
 /// ```
 pub struct JoinHashMap {
     // Stores hash value to last row index
-    map: RawTable<(u64, u64)>,
+    pub map: RawTable<(u64, u64)>,
     // Stores indices in chained list data structure
-    next: Vec<u64>,
+    pub next: Vec<u64>,
 }
 
 impl JoinHashMap {
@@ -175,6 +175,7 @@ macro_rules! chain_traverse {
                 } else {
                     Some(($input_idx, Some(next)))
                 };
+
                 return ($input_indices, $match_indices, next_offset);
             }
             if next == 0 {
@@ -299,7 +300,7 @@ pub trait JoinHashMapType {
 
         let hash_map: &RawTable<(u64, u64)> = self.get_map();
         let next_chain = self.get_list();
-
+        // println!("offset {:?}", offset);
         // Calculate initial `hash_values` index before iterating
         let to_skip = match offset {
             // None `initial_next_idx` indicates that `initial_idx` processing has'n been started
@@ -324,12 +325,21 @@ pub trait JoinHashMapType {
                 initial_idx + 1
             }
         };
-
+        // println!("to_skip {}", to_skip);
         let mut row_idx = to_skip;
         for hash_value in &hash_values[to_skip..] {
             if let Some((_, index)) =
                 hash_map.get(*hash_value, |(hash, _)| *hash_value == *hash)
             {
+                // println!(
+                //     "input_indices {} match_indices {} hash_values {} row_idx {:?} index {} remaining_output {}",
+                //     input_indices.len(),
+                //     match_indices.len(),
+                //     hash_values.len(),
+                //     row_idx,
+                //     index,
+                //     remaining_output
+                // );
                 chain_traverse!(
                     input_indices,
                     match_indices,

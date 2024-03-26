@@ -24,7 +24,7 @@ pub use nested_loop_join::NestedLoopJoinExec;
 pub use sort_merge_join::SortMergeJoinExec;
 pub use symmetric_hash_join::SymmetricHashJoinExec;
 mod cross_join;
-mod hash_join;
+pub mod hash_join;
 mod nested_loop_join;
 mod sort_merge_join;
 mod stream_join_utils;
