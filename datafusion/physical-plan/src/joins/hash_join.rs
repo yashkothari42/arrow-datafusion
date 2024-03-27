@@ -106,7 +106,7 @@ impl JoinLeftData {
     }
 
     /// returns a reference to the build side batch
-    fn batch(&self) -> &RecordBatch {
+    pub fn batch(&self) -> &RecordBatch {
         &self.batch
     }
 }
