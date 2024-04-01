@@ -36,7 +36,9 @@ impl<R: 'static> SpawnedTask<R> {
         R: Send,
     {
         let mut inner = JoinSet::new();
-        inner.spawn(task);
+
+        // this is needed so that no tokio processes are spun
+        // inner.spawn(task);
         Self { inner }
     }
 
