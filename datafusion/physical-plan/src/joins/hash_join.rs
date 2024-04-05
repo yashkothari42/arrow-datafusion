@@ -285,7 +285,7 @@ pub struct HashJoinExec {
     /// Future that consumes left input and builds the hash table
     left_fut: OnceAsync<JoinLeftData>,
     /// Shared the `RandomState` for the hashing algorithm
-    random_state: RandomState,
+    pub random_state: RandomState,
     /// Partitioning mode to use
     pub mode: PartitionMode,
     /// Execution metrics
