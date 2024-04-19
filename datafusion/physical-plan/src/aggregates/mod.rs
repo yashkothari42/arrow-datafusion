@@ -50,7 +50,7 @@ use datafusion_physical_expr::{
 use itertools::Itertools;
 
 mod group_values;
-mod no_grouping;
+pub mod no_grouping;
 mod order;
 mod row_hash;
 mod topk;
@@ -221,7 +221,7 @@ impl PartialEq for PhysicalGroupBy {
     }
 }
 
-enum StreamType {
+pub enum StreamType {
     AggregateStream(AggregateStream),
     GroupedHash(GroupedHashAggregateStream),
     GroupedPriorityQueue(GroupedTopKAggregateStream),
@@ -245,9 +245,9 @@ pub struct AggregateExec {
     /// Group by expressions
     group_by: PhysicalGroupBy,
     /// Aggregate expressions
-    aggr_expr: Vec<Arc<dyn AggregateExpr>>,
+    pub aggr_expr: Vec<Arc<dyn AggregateExpr>>,
     /// FILTER (WHERE clause) expression for each aggregate expression
-    filter_expr: Vec<Option<Arc<dyn PhysicalExpr>>>,
+    pub filter_expr: Vec<Option<Arc<dyn PhysicalExpr>>>,
     /// Set if the output of this aggregation is truncated by a upstream sort/limit clause
     limit: Option<usize>,
     /// Input plan, could be a partial aggregate or the input to the aggregate
@@ -430,7 +430,7 @@ impl AggregateExec {
         self.limit
     }
 
-    fn execute_typed(
+    pub fn execute_typed(
         &self,
         partition: usize,
         context: Arc<TaskContext>,
@@ -1013,7 +1013,7 @@ fn get_aggregate_exprs_requirement(
 /// The expressions are different depending on `mode`:
 /// * Partial: AggregateExpr::expressions
 /// * Final: columns of `AggregateExpr::state_fields()`
-fn aggregate_expressions(
+pub fn aggregate_expressions(
     aggr_expr: &[Arc<dyn AggregateExpr>],
     mode: &AggregateMode,
     col_idx_base: usize,
@@ -1066,9 +1066,9 @@ fn merge_expressions(
     })
 }
 
-pub(crate) type AccumulatorItem = Box<dyn Accumulator>;
+pub type AccumulatorItem = Box<dyn Accumulator>;
 
-fn create_accumulators(
+pub fn create_accumulators(
     aggr_expr: &[Arc<dyn AggregateExpr>],
 ) -> Result<Vec<AccumulatorItem>> {
     aggr_expr
@@ -1079,7 +1079,7 @@ fn create_accumulators(
 
 /// returns a vector of ArrayRefs, where each entry corresponds to either the
 /// final value (mode = Final, FinalPartitioned and Single) or states (mode = Partial)
-fn finalize_aggregation(
+pub fn finalize_aggregation(
     accumulators: &mut [AccumulatorItem],
     mode: &AggregateMode,
 ) -> Result<Vec<ArrayRef>> {

@@ -40,7 +40,7 @@ use futures::stream::{Stream, StreamExt};
 use super::AggregateExec;
 
 /// stream struct for aggregation without grouping columns
-pub(crate) struct AggregateStream {
+pub struct AggregateStream {
     stream: BoxStream<'static, Result<RecordBatch>>,
     schema: SchemaRef,
 }
@@ -52,16 +52,16 @@ pub(crate) struct AggregateStream {
 /// [`futures::stream::unfold`].
 ///
 /// The latter requires a state object, which is [`AggregateStreamInner`].
-struct AggregateStreamInner {
-    schema: SchemaRef,
-    mode: AggregateMode,
-    input: SendableRecordBatchStream,
-    baseline_metrics: BaselineMetrics,
-    aggregate_expressions: Vec<Vec<Arc<dyn PhysicalExpr>>>,
-    filter_expressions: Vec<Option<Arc<dyn PhysicalExpr>>>,
-    accumulators: Vec<AccumulatorItem>,
-    reservation: MemoryReservation,
-    finished: bool,
+pub struct AggregateStreamInner {
+    pub schema: SchemaRef,
+    pub mode: AggregateMode,
+    pub input: SendableRecordBatchStream,
+    pub baseline_metrics: BaselineMetrics,
+    pub aggregate_expressions: Vec<Vec<Arc<dyn PhysicalExpr>>>,
+    pub filter_expressions: Vec<Option<Arc<dyn PhysicalExpr>>>,
+    pub accumulators: Vec<AccumulatorItem>,
+    pub reservation: MemoryReservation,
+    pub finished: bool,
 }
 
 impl AggregateStream {
@@ -190,7 +190,7 @@ impl RecordBatchStream for AggregateStream {
 /// If successful, this returns the additional number of bytes that were allocated during this process.
 ///
 /// TODO: Make this a member function
-fn aggregate_batch(
+pub fn aggregate_batch(
     mode: &AggregateMode,
     batch: RecordBatch,
     accumulators: &mut [AccumulatorItem],

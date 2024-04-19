@@ -55,31 +55,31 @@ use super::{get_tbl_tpch_table_schema, get_tpch_table_schema, TPCH_TABLES};
 pub struct RunOpt {
     /// Query number. If not specified, runs all queries
     #[structopt(short, long)]
-    query: Option<usize>,
+    pub query: Option<usize>,
 
     /// Common options
     #[structopt(flatten)]
-    common: CommonOpt,
+    pub common: CommonOpt,
 
     /// Path to data files
     #[structopt(parse(from_os_str), required = true, short = "p", long = "path")]
-    path: PathBuf,
+    pub path: PathBuf,
 
     /// File format: `csv` or `parquet`
     #[structopt(short = "f", long = "format", default_value = "csv")]
-    file_format: String,
+    pub file_format: String,
 
     /// Load the data into a MemTable before executing the query
     #[structopt(short = "m", long = "mem-table")]
-    mem_table: bool,
+    pub mem_table: bool,
 
     /// Path to machine readable output file
     #[structopt(parse(from_os_str), short = "o", long = "output")]
-    output_path: Option<PathBuf>,
+    pub output_path: Option<PathBuf>,
 
     /// Whether to disable collection of statistics (and cost based optimizations) or not.
     #[structopt(short = "S", long = "disable-statistics")]
-    disable_statistics: bool,
+    pub disable_statistics: bool,
 }
 
 const TPCH_QUERY_START_ID: usize = 1;
@@ -157,7 +157,7 @@ impl RunOpt {
         Ok(query_results)
     }
 
-    async fn register_tables(&self, ctx: &SessionContext) -> Result<()> {
+    pub async fn register_tables(&self, ctx: &SessionContext) -> Result<()> {
         for table in TPCH_TABLES {
             let table_provider = { self.get_table(ctx, table).await? };
 
