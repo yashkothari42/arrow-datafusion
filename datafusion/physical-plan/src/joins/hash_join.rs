@@ -39,13 +39,6 @@ use crate::{
     Partitioning, PlanProperties, RecordBatchStream, SendableRecordBatchStream,
     Statistics,
 };
-use arrow::util::pretty;
-use std::fmt;
-use std::mem::size_of;
-use std::sync::Arc;
-use std::task::Poll;
-use std::{any::Any, usize, vec};
-
 use arrow::array::{
     Array, ArrayRef, BooleanArray, BooleanBufferBuilder, PrimitiveArray, UInt32Array,
     UInt64Array,
@@ -55,6 +48,7 @@ use arrow::compute::{and, concat_batches, take, FilterBuilder};
 use arrow::datatypes::{Schema, SchemaRef};
 use arrow::record_batch::RecordBatch;
 use arrow::util::bit_util;
+use arrow::util::pretty;
 use arrow_array::cast::downcast_array;
 use arrow_schema::ArrowError;
 use datafusion_common::{
@@ -65,11 +59,18 @@ use datafusion_execution::memory_pool::{MemoryConsumer, MemoryReservation};
 use datafusion_execution::TaskContext;
 use datafusion_physical_expr::equivalence::join_equivalence_properties;
 use datafusion_physical_expr::PhysicalExprRef;
+use std::mem::size_of;
+use std::pin::Pin;
+use std::sync::Arc;
+use std::task::Poll;
+use std::{any::Any, usize, vec};
+use std::{default, fmt};
 
 use ahash::RandomState;
 use futures::{ready, Stream, StreamExt, TryStreamExt};
 
 /// HashTable and input data for the left (build side) of a join
+#[derive(Clone)]
 pub struct JoinLeftData {
     /// The hash table with indices into `batch`
     hash_map: JoinHashMap,
@@ -566,7 +567,9 @@ impl HashJoinExec {
 
         // we have the batches and the hash map with their keys. We can how create a stream
         // over the right that uses this information to issue new batches.
-        let right_stream = self.right.execute(partition, context)?;
+        // let pp: (dyn RecordBatchStream + Send) = &self;
+        // let right_stream = Box::pin(pp);
+        let right_stream1 = self.right.execute(0, context)?;
 
         Ok(HashJoinStream {
             schema: self.schema(),
@@ -574,7 +577,7 @@ impl HashJoinExec {
             on_right,
             filter: self.filter.clone(),
             join_type: self.join_type,
-            right: right_stream,
+            right: right_stream1,
             column_indices: self.column_indices.clone(),
             random_state: self.random_state.clone(),
             join_metrics,
@@ -661,7 +664,8 @@ impl ExecutionPlan for HashJoinExec {
         partition: usize,
         context: Arc<TaskContext>,
     ) -> Result<SendableRecordBatchStream> {
-        let stream = self.get_hash_join_stream(partition, context).unwrap();
+        let stream: HashJoinStream =
+            self.get_hash_join_stream(partition, context).unwrap();
         Ok(Box::pin(stream))
     }
 
@@ -1280,9 +1284,9 @@ impl HashJoinStream {
         let build_side = self.build_side.try_as_ready_mut()?;
 
         let timer = self.join_metrics.join_time.timer();
-        println!("printing inside process probe batch");
-        pretty::print_batches(&[build_side.left_data.batch.clone()])?;
-        println!("datafusion {:?}", self.hashes_buffer);
+        // println!("printing inside process probe batch");
+        // pretty::print_batches(&[build_side.left_data.batch.clone()])?;
+        // println!("datafusion {:?}", self.hashes_buffer);
         // get the matched by join keys indices
         let (left_indices, right_indices, next_offset) = lookup_join_hashmap(
             build_side.left_data.hash_map(),
@@ -1295,7 +1299,7 @@ impl HashJoinStream {
             self.batch_size,
             state.offset,
         )?;
-        println!("before {:?} {:?}", left_indices.len(), right_indices.len());
+        // println!("before {:?} {:?}", left_indices.len(), right_indices.len());
 
         // apply join filter if exists
         let (left_indices, right_indices) = if let Some(filter) = &self.filter {
@@ -1310,7 +1314,7 @@ impl HashJoinStream {
         } else {
             (left_indices, right_indices)
         };
-        println!("later {:?} {:?}", left_indices.len(), right_indices.len());
+        // println!("later {:?} {:?}", left_indices.len(), right_indices.len());
         // mark joined left-side indices as visited, if required by join type
         if need_produce_result_in_final(self.join_type) {
             left_indices.iter().flatten().for_each(|x| {

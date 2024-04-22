@@ -118,6 +118,7 @@ use parking_lot::Mutex;
 /// | 0 | 0 | 0 | 2 | 4 | <--- hash value 10 maps to 5,4,2 (which means indices values 4,3,1)
 /// ---------------------
 /// ```
+#[derive(Clone)]
 pub struct JoinHashMap {
     // Stores hash value to last row index
     pub map: RawTable<(u64, u64)>,
@@ -429,7 +430,7 @@ fn check_join_set_is_valid(
         .flat_map(|on| collect_columns(&on.1))
         .collect::<HashSet<_>>();
     let right_missing = on_right.difference(right).collect::<HashSet<_>>();
-
+    println!("left: {:?} \n right:{:?} \n on:{:?}", left, right, on);
     if !left_missing.is_empty() | !right_missing.is_empty() {
         return plan_err!(
             "The left or right side of the join does not have all columns on \"on\": \nMissing on the left: {left_missing:?}\nMissing on the right: {right_missing:?}"
