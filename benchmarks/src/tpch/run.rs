@@ -30,6 +30,7 @@ use datafusion::physical_plan::display::DisplayableExecutionPlan;
 use datafusion::physical_plan::{collect, displayable};
 use datafusion_common::{DEFAULT_CSV_EXTENSION, DEFAULT_PARQUET_EXTENSION};
 use log::info;
+use std::process::exit;
 
 use datafusion_common::instant::Instant;
 use std::path::PathBuf;
